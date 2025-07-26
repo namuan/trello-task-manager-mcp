@@ -1,8 +1,8 @@
 # Trello Task Manager MCP
 
-[Video Placeholder]
-
 LLM Task management System that integrates as an MCP Server and uses Trello for managing tasks/cards.
+
+![](assets/trello-task-manager-mcp-screenshot.png)
 
 ## Features
 
