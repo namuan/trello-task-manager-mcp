@@ -29,6 +29,7 @@ class TrelloTaskManager:
         self.selected_board = next(
             (board for board in self.client.list_boards() if board.name == BOARD_NAME_TO_MATCH), None
         )
+        self.labels = {}
         if self.selected_board:
             self._create_default_labels()
 
@@ -38,34 +39,40 @@ class TrelloTaskManager:
         if self.selected_board_list is None:
             self.selected_board_list = self.selected_board.add_list(project_name)
 
-        card = self.selected_board_list.add_card(name=f"{title}", desc=description, position="bottom")
+        return self.selected_board_list.add_card(name=f"{title}", desc=description, position="bottom")
 
-        if not self.wip_label:
-            wip_label = next((label for label in self.selected_board.get_labels() if label.name == "WIP"), None)
-            self.wip_label = wip_label
+    def mark_as_in_progress(self, project_name, title):
+        card_to_update = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
+        if not card_to_update:
+            raise TaskNotFoundError(project_name, title)
 
-        card.add_label(self.wip_label)
+        if "WIP" in self.labels:
+            card_to_update.add_label(self.labels["WIP"])
 
-        return card
+        return f"Task '{title}' in project '{project_name}' marked as in progress."
 
     def mark_as_completed(self, project_name, title):
         card_to_close = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
         if not card_to_close:
             raise TaskNotFoundError(project_name, title)
 
-        card_to_close.remove_label(self.wip_label)
+        if "WIP" in self.labels:
+            card_to_close.remove_label(self.labels["WIP"])
         card_to_close.set_due_complete()
 
         return f"Task '{title}' in project '{project_name}' has been closed."
 
     def _create_default_labels(self):
         try:
-            existing_labels = {label.name for label in self.selected_board.get_labels()}
+            existing_labels = {label.name: label for label in self.selected_board.get_labels()}
             default_labels = {"WIP": "blue"}
 
             for label_name, label_color in default_labels.items():
                 if label_name not in existing_labels:
-                    self.selected_board.add_label(label_name, label_color)
+                    new_label = self.selected_board.add_label(label_name, label_color)
+                    self.labels[label_name] = new_label
+                else:
+                    self.labels[label_name] = existing_labels[label_name]
         except Exception as e:
             print(f"Error creating default labels: {e}")
 
