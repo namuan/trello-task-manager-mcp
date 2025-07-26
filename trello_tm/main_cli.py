@@ -37,7 +37,23 @@ def create_mcp() -> FastMCP:
         except Exception as e:
             return f"Error adding task: {e!s}"
         else:
-            return f"Added new task '{title}' to {project_name}"
+            return f"Added new task '{title}' to {project_name} - {ctx.__dict__}"
+
+    @mcp.tool()
+    async def mark_as_completed(ctx: Context, project_name: str, title: str) -> str:
+        """Mark a task as completed.
+
+        Args:
+            project_name: Name of the project
+            title: Task title to be marked as completed
+
+        Returns:
+            Confirmation message
+        """
+        try:
+            return manager.mark_as_completed(project_name, title)
+        except Exception as e:
+            return f"Error marking task as completed: {e!s}"
 
     return mcp
 
