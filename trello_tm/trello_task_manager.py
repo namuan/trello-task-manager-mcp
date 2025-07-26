@@ -11,8 +11,6 @@ BOARD_NAME_TO_MATCH = os.getenv("TRELLO_BOARD_NAME")
 
 
 class TaskNotFoundError(Exception):
-    """Exception raised when a task is not found in a project."""
-
     def __init__(self, project_name, title):
         self.project_name = project_name
         self.title = title
