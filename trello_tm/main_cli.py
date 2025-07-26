@@ -33,11 +33,30 @@ def create_mcp() -> FastMCP:
             Confirmation message
         """
         try:
-            manager.add_task(project_name, title, description)
+            _, message = manager.add_task(project_name, title, description)
         except Exception as e:
             return f"Error adding task: {e!s}"
         else:
-            return f"Added new task '{title}' to {project_name} - {ctx.__dict__}"
+            return message
+
+    @mcp.tool()
+    async def get_next_available_task(ctx: Context, project_name: str) -> str:
+        """Get the next available task from a project.
+
+        An available task is one that is not marked as 'in progress' and not completed.
+
+        Args:
+            project_name: Name of the project
+
+        Returns:
+            The name of the next available task or a message if no task is available.
+        """
+        try:
+            _, message = manager.get_next_task(project_name)
+        except Exception as e:
+            return f"Error getting next available task: {e!s}"
+        else:
+            return message
 
     @mcp.tool()
     async def mark_as_in_progress(ctx: Context, project_name: str, title: str) -> str:
@@ -51,9 +70,11 @@ def create_mcp() -> FastMCP:
             Confirmation message
         """
         try:
-            return manager.mark_as_in_progress(project_name, title)
+            _, message = manager.mark_as_in_progress(project_name, title)
         except Exception as e:
             return f"Error marking task as in progress: {e!s}"
+        else:
+            return message
 
     @mcp.tool()
     async def mark_as_completed(ctx: Context, project_name: str, title: str) -> str:
@@ -67,9 +88,11 @@ def create_mcp() -> FastMCP:
             Confirmation message
         """
         try:
-            return manager.mark_as_completed(project_name, title)
+            _, message = manager.mark_as_completed(project_name, title)
         except Exception as e:
             return f"Error marking task as completed: {e!s}"
+        else:
+            return message
 
     return mcp
 

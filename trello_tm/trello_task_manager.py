@@ -43,7 +43,23 @@ class TrelloTaskManager:
         if self.selected_board_list is None:
             self.selected_board_list = self.selected_board.add_list(project_name)
 
-        return self.selected_board_list.add_card(name=f"{title}", desc=description, position="bottom")
+        card_added = self.selected_board_list.add_card(name=f"{title}", desc=description, position="bottom")
+        return card_added, f"Added new task '{title}' to {project_name}"
+
+    def get_next_task(self, project_name):
+        wip_label = self.labels.get(WIP_LABEL_NAME)
+        if not wip_label:
+            return "WIP label has not been set up on the board."
+
+        for card in self.selected_board_list.list_cards():
+            card.fetch()
+
+            has_wip = any(label.id == wip_label.id for label in card.labels)
+
+            if not has_wip and not card.is_due_complete:
+                return card, f"Next available task: {card.name} - {card.description}"
+
+        return None, f"No available tasks found in '{project_name}'."
 
     def mark_as_in_progress(self, project_name, title):
         card_to_update = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
@@ -53,18 +69,25 @@ class TrelloTaskManager:
         if WIP_LABEL_NAME in self.labels:
             card_to_update.add_label(self.labels[WIP_LABEL_NAME])
 
-        return f"Task '{title}' in project '{project_name}' marked as in progress."
+        return card_to_update, f"Task '{title}' in project '{project_name}' marked as in progress."
 
     def mark_as_completed(self, project_name, title):
         card_to_close = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
         if not card_to_close:
             raise TaskNotFoundError(project_name, title)
 
-        if WIP_LABEL_NAME in self.labels:
+        if WIP_LABEL_NAME in self.labels and self.labels[WIP_LABEL_NAME] in card_to_close.labels:
             card_to_close.remove_label(self.labels[WIP_LABEL_NAME])
         card_to_close.set_due_complete()
 
-        return f"Task '{title}' in project '{project_name}' has been closed."
+        return card_to_close, f"Task '{title}' in project '{project_name}' has been completed."
+
+    def delete_all_tasks(self, project_name: str) -> str:
+        cards = self.selected_board_list.list_cards()
+        for c in cards:
+            c.delete()
+
+        return f"All tasks in project '{project_name}' have been deleted."
 
     def _create_default_labels(self):
         try:
@@ -86,7 +109,22 @@ class TrelloTaskManager:
 
 if __name__ == "__main__":
     # Testing
+    import datetime
+
     tm = TrelloTaskManager()
-    tm.add_task("Some project", "Project Title", "Project Description")
-    tm.mark_as_in_progress("Some project", "Project Title")
-    tm.mark_as_completed("Some project", "Project Title")
+
+    new_task_title = f"New Task at {datetime.datetime.now()}"
+    tm.add_task("Some project", new_task_title, "This is a test task.")
+    t1, _ = tm.get_next_task("Some project")
+    print(t1.name)
+
+    tm.mark_as_in_progress("Some project", new_task_title)
+    _, m1 = tm.get_next_task("Some project")
+    print(m1)
+
+    completed_card, _ = tm.mark_as_completed("Some project", new_task_title)
+    _, m2 = tm.get_next_task("Some project")
+    print(m2)
+
+    input("Press Enter to continue...")
+    tm.delete_all_tasks("Some project")
