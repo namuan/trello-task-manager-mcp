@@ -1,12 +1,62 @@
-import logging
+import asyncio
+import os
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger("TrelloTaskManager")
+from dotenv import load_dotenv
+from mcp.server.fastmcp import Context, FastMCP
+
+from trello_tm.trello_task_manager import TrelloTaskManager
+
+load_dotenv()
+
+
+def create_mcp() -> FastMCP:
+    """Create a new MCP instance with task management tools."""
+    mcp = FastMCP(
+        "TASK MANAGER",
+        description="Trello Task Manager",
+        host=os.getenv("HOST", "127.0.0.1"),
+        port=os.getenv("PORT", "8050"),
+    )
+
+    manager = TrelloTaskManager()
+
+    @mcp.tool()
+    async def add_task(ctx: Context, project_name: str, title: str, description: str) -> str:
+        """Add a new task to a project's task file.
+
+        Args:
+            project_name: Name of the project
+            title: Task title
+            description: Task description
+
+        Returns:
+            Confirmation message
+        """
+        try:
+            manager.add_task(project_name, title, description)
+        except Exception as e:
+            return f"Error adding task: {e!s}"
+        else:
+            return f"Added new task '{title}' to {project_name}"
+
+    return mcp
+
+
+async def async_main():
+    # Create a fresh MCP instance
+    mcp = create_mcp()
+
+    transport = os.getenv("TRANSPORT", "sse")
+    if transport == "sse":
+        # Run the MCP server with sse transport
+        await mcp.run_sse_async()
+    else:
+        # Run the MCP server with stdio transport
+        await mcp.run_stdio_async()
 
 
 def main():
-    logging.info("Starting Trello Task Manager")
+    asyncio.run(async_main())
 
 
 if __name__ == "__main__":
