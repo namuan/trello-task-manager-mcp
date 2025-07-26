@@ -13,25 +13,26 @@ LLM Task management System that integrates as an MCP Server and uses Trello for 
 ## Prerequisites
 
 - Python 3.10 or higher
-- A Trello account
-- Trello API key and token
+- [uv](https://github.com/astral-sh/uv)
+- A Trello account with [API Key and Token](https://trello.com/power-ups/admin)
 
 ## Installation
 
 1. Clone the repository:
 
    ```bash
-   git clone [your-repository-url]
+   git clone https://github.com/namuan/trello-task-manager-mcp.git
    cd trello-task-manager-mcp
    ```
 
 2. Install dependencies:
 
    ```bash
-   pip install -e .
+   uv sync
    ```
 
 3. Create a `.env` file in the project root with your Trello credentials:
+
    ```env
    TRELLO_API_KEY=your_api_key
    TRELLO_API_TOKEN=your_api_token
@@ -40,30 +41,42 @@ LLM Task management System that integrates as an MCP Server and uses Trello for 
    PORT=8050      # Optional, defaults to 8050
    ```
 
+4. Run the application
+
+   ```bash
+   trello-task-manager-mcp
+   ```
+
+   or
+
+   ```bash
+   make run
+   ```
+
 ## MCP Integration
 
-Add the following entry to your MCP configuration:
+Add the following entry to your MCP client:
 
 ```json
-"trello-task-manager": {
-    "url": "http://localhost:8050/sse",
-    "type": "sse"
+{
+  "mcpServers": {
+    "trello-task-manager": {
+      "type": "sse",
+      "url": "http://localhost:8050/sse",
+      "note": "For SSE connections, add this URL directly in your MCP Client"
+    }
+  }
 }
 ```
 
 ## Usage
 
-1. Start the Trello Task Manager:
+Ask MCP Client to use `Trello task manager` along with the instructions to use one of these tools.
 
-   ```bash
-   python -m trello_tm.main_cli
-   ```
-
-2. Use MCP commands to manage tasks:
-   - `add_task`: Create a new task
-   - `get_next_available_task`: Get the next available task
-   - `mark_as_in_progress`: Mark a task as in progress
-   - `mark_as_completed`: Mark a task as completed
+- `add_task`: Create a new task
+- `get_next_available_task`: Get the next available task
+- `mark_as_in_progress`: Mark a task as in progress
+- `mark_as_completed`: Mark a task as completed
 
 ## Development
 
