@@ -9,6 +9,10 @@ TRELLO_API_KEY = os.getenv("TRELLO_API_KEY")
 TRELLO_API_TOKEN = os.getenv("TRELLO_API_TOKEN")
 BOARD_NAME_TO_MATCH = os.getenv("TRELLO_BOARD_NAME")
 
+# Default label definitions
+DEFAULT_LABELS = {"WIP": "blue"}
+WIP_LABEL_NAME = "WIP"
+
 
 class TaskNotFoundError(Exception):
     def __init__(self, project_name, title):
@@ -46,8 +50,8 @@ class TrelloTaskManager:
         if not card_to_update:
             raise TaskNotFoundError(project_name, title)
 
-        if "WIP" in self.labels:
-            card_to_update.add_label(self.labels["WIP"])
+        if WIP_LABEL_NAME in self.labels:
+            card_to_update.add_label(self.labels[WIP_LABEL_NAME])
 
         return f"Task '{title}' in project '{project_name}' marked as in progress."
 
@@ -56,8 +60,8 @@ class TrelloTaskManager:
         if not card_to_close:
             raise TaskNotFoundError(project_name, title)
 
-        if "WIP" in self.labels:
-            card_to_close.remove_label(self.labels["WIP"])
+        if WIP_LABEL_NAME in self.labels:
+            card_to_close.remove_label(self.labels[WIP_LABEL_NAME])
         card_to_close.set_due_complete()
 
         return f"Task '{title}' in project '{project_name}' has been closed."
@@ -65,9 +69,7 @@ class TrelloTaskManager:
     def _create_default_labels(self):
         try:
             existing_labels = {label.name: label for label in self.selected_board.get_labels()}
-            default_labels = {"WIP": "blue"}
-
-            for label_name, label_color in default_labels.items():
+            for label_name, label_color in DEFAULT_LABELS.items():
                 if label_name not in existing_labels:
                     new_label = self.selected_board.add_label(label_name, label_color)
                     self.labels[label_name] = new_label
@@ -86,4 +88,5 @@ if __name__ == "__main__":
     # Testing
     tm = TrelloTaskManager()
     tm.add_task("Some project", "Project Title", "Project Description")
+    tm.mark_as_in_progress("Some project", "Project Title")
     tm.mark_as_completed("Some project", "Project Title")
