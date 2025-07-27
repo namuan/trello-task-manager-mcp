@@ -4,9 +4,12 @@ LLM Task management System that integrates as an MCP Server and uses Trello for 
 
 ![](assets/trello-task-manager-mcp-screenshot.png)
 
+See [Demo Video](https://x.com/namuan_twt/status/1949216924765753409)
+
 ## Features
 
 - Create and manage tasks in Trello boards
+- Update task descriptions
 - Mark tasks as in-progress or completed
 - Get next available task
 - Get filtered list of tasks (all, work-in-progress, or completed)
@@ -77,6 +80,7 @@ Add the following entry to your MCP client:
 Ask MCP Client to use `Trello task manager` along with the instructions to use one of these tools.
 
 - `add_task`: Create a new task
+- `update_task_description`: Update a task's description
 - `get_next_available_task`: Get the next available task
 - `get_tasks`: Get a list of tasks with optional filtering (all, wip, done)
 - `mark_as_in_progress`: Mark a task as in progress
