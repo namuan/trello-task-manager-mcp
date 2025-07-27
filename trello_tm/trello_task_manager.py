@@ -142,6 +142,68 @@ class TrelloTaskManager:
         # If we get here, no checklist was found
         raise ChecklistNotFoundError(DEFAULT_CHECKLIST_NAME, title)
 
+    def get_tasks(self, project_name, filter_type="all"):
+        cards = self.selected_board_list.list_cards()
+        filtered_tasks = []
+
+        wip_label = self.labels.get(WIP_LABEL_NAME)
+
+        for card in cards:
+            card.fetch()
+
+            # Check if card has WIP label
+            has_wip = False
+            if wip_label:
+                has_wip = any(label.id == wip_label.id for label in card.labels)
+
+            # Check if card is completed
+            is_completed = card.is_due_complete
+
+            # Apply filter
+            if filter_type == "all":
+                filtered_tasks.append({
+                    "name": card.name,
+                    "description": card.description,
+                    "status": "done" if is_completed else ("wip" if has_wip else "todo"),
+                    "id": card.id,
+                })
+            elif filter_type == "wip" and has_wip and not is_completed:
+                filtered_tasks.append({
+                    "name": card.name,
+                    "description": card.description,
+                    "status": "wip",
+                    "id": card.id,
+                })
+            elif filter_type == "done" and is_completed:
+                filtered_tasks.append({
+                    "name": card.name,
+                    "description": card.description,
+                    "status": "done",
+                    "id": card.id,
+                })
+
+        if not filtered_tasks:
+            if filter_type == "all":
+                message = f"No tasks found in project '{project_name}'."
+            elif filter_type == "wip":
+                message = f"No work in progress tasks found in project '{project_name}'."
+            elif filter_type == "done":
+                message = f"No completed tasks found in project '{project_name}'."
+            else:
+                message = f"No tasks found with filter '{filter_type}' in project '{project_name}'."
+        else:
+            task_count = len(filtered_tasks)
+            if filter_type == "all":
+                message = f"Found {task_count} task(s) in project '{project_name}'."
+            elif filter_type == "wip":
+                message = f"Found {task_count} work in progress task(s) in project '{project_name}'."
+            elif filter_type == "done":
+                message = f"Found {task_count} completed task(s) in project '{project_name}'."
+            else:
+                message = f"Found {task_count} task(s) with filter '{filter_type}' in project '{project_name}'."
+
+        return filtered_tasks, message
+
     def delete_all_tasks(self, project_name: str) -> str:
         cards = self.selected_board_list.list_cards()
         for c in cards:
@@ -193,13 +255,32 @@ if __name__ == "__main__":
     _, next_item_msg2 = tm.get_next_unchecked_checklist_item(project_name, new_task_title)
     print(next_item_msg2)
 
-    tm.mark_as_in_progress(project_name, new_task_title)
-    _, m1 = tm.get_next_task(project_name)
-    print(m1)
+    # Test get_tasks with different filters
+    print("\n=== Testing get_tasks method ===")
 
+    # Get all tasks
+    all_tasks, msg = tm.get_tasks(project_name, "all")
+    print(f"All tasks: {msg}")
+    for task in all_tasks:
+        print(f"  - {task['name']} (Status: {task['status']})")
+
+    # Mark task as in progress and test WIP filter
+    tm.mark_as_in_progress(project_name, new_task_title)
+    wip_tasks, msg = tm.get_tasks(project_name, "wip")
+    print(f"\nWIP tasks: {msg}")
+    for task in wip_tasks:
+        print(f"  - {task['name']} (Status: {task['status']})")
+
+    # Complete task and test done filter
     completed_card, _ = tm.mark_as_completed(project_name, new_task_title)
-    _, m2 = tm.get_next_task(project_name)
-    print(m2)
+    done_tasks, msg = tm.get_tasks(project_name, "done")
+    print(f"\nCompleted tasks: {msg}")
+    for task in done_tasks:
+        print(f"  - {task['name']} (Status: {task['status']})")
+
+    # Test next available task
+    _, m1 = tm.get_next_task(project_name)
+    print(f"\nNext available task: {m1}")
 
     input("Press Enter to continue...")
     tm.delete_all_tasks("Some project")

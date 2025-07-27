@@ -152,6 +152,32 @@ def create_task_tools(mcp: FastMCP, manager: TrelloTaskManager):
             title,
         )
 
+    @mcp.tool()
+    async def get_tasks(ctx: Context, project_name: str, filter_type: str = "all") -> str:
+        """Get tasks from a project with optional filtering.
+
+        Args:
+            project_name: Name of the project
+            filter_type: Filter type - 'all' (default), 'wip' (work in progress), or 'done'
+
+        Returns:
+            A formatted list of tasks matching the filter criteria
+        """
+        try:
+            tasks, message = manager.get_tasks(project_name, filter_type)
+            if not tasks:
+                return message
+
+            # Format the tasks for display
+            result = [message]
+            for i, task in enumerate(tasks, 1):
+                status_emoji = "✅" if task["status"] == "done" else ("🔄" if task["status"] == "wip" else "📋")
+                result.append(f"{i}. {status_emoji} {task['name']} - {task['description']} (Status: {task['status']})")
+
+            return "\n".join(result)
+        except Exception as e:
+            return f"Error getting tasks: {e!s}"
+
 
 def create_mcp() -> FastMCP:
     """Create a new MCP instance with task management tools.
