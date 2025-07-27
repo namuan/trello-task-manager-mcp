@@ -22,6 +22,13 @@ class TaskNotFoundError(Exception):
         super().__init__(f"Task '{title}' not found in project '{project_name}'.")
 
 
+class ChecklistNotFoundError(Exception):
+    def __init__(self, checklist_name, title):
+        self.checklist_name = checklist_name
+        self.title = title
+        super().__init__(f"Checklist '{checklist_name}' not found for task '{title}'.")
+
+
 class TrelloTaskManager:
     selected_board_list = None
     wip_label = None
@@ -93,6 +100,22 @@ class TrelloTaskManager:
 
         return card_to_update, f"Checklist added to task '{title}' in project '{project_name}'."
 
+    def complete_checklist_item(self, project_name, title, checklist_item_name):
+        card_to_update = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
+        if not card_to_update:
+            raise TaskNotFoundError(project_name, title)
+
+        card_to_update.fetch_checklists()
+        for checklist in card_to_update.checklists:
+            if checklist.name == DEFAULT_CHECKLIST_NAME:
+                checklist.set_checklist_item(checklist_item_name, True)
+                return (
+                    card_to_update,
+                    f"Checklist item '{checklist_item_name}' in task '{title}' in project '{project_name}' completed.",
+                )
+
+        raise ChecklistNotFoundError(DEFAULT_CHECKLIST_NAME, title)
+
     def delete_all_tasks(self, project_name: str) -> str:
         cards = self.selected_board_list.list_cards()
         for c in cards:
@@ -132,6 +155,9 @@ if __name__ == "__main__":
 
     tm.update_task_with_checklist(project_name, new_task_title, ["Item 1", "Item 2", "Item 3"])
     print("Checklist set.")
+
+    _, m = tm.complete_checklist_item(project_name, new_task_title, "Item 1")
+    print(m)
 
     tm.mark_as_in_progress(project_name, new_task_title)
     _, m1 = tm.get_next_task(project_name)

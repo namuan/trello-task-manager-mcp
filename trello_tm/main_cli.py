@@ -114,6 +114,26 @@ def create_task_tools(mcp: FastMCP, manager: TrelloTaskManager):
             checklist_items,
         )
 
+    @mcp.tool()
+    async def complete_checklist_item(ctx: Context, project_name: str, title: str, checklist_item_name: str) -> str:
+        """Complete a checklist item for a task.
+
+        Args:
+            project_name: Name of the project
+            title: Task title
+            checklist_item_name: The name of the checklist item to complete.
+
+        Returns:
+            Confirmation message
+        """
+        return handle_task_operation(
+            manager.complete_checklist_item,
+            "Error completing checklist item",
+            project_name,
+            title,
+            checklist_item_name,
+        )
+
 
 def create_mcp() -> FastMCP:
     """Create a new MCP instance with task management tools.
