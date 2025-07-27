@@ -66,6 +66,7 @@ class TrelloTaskManager:
         if not wip_label:
             return "WIP label has not been set up on the board."
 
+        self.selected_board_list = self._find_existing_list(project_name)
         for card in self.selected_board_list.list_cards():
             card.fetch()
 
@@ -77,6 +78,7 @@ class TrelloTaskManager:
         return None, f"No available tasks found in '{project_name}'."
 
     def mark_as_in_progress(self, project_name, title):
+        self.selected_board_list = self._find_existing_list(project_name)
         card_to_update = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
         if not card_to_update:
             raise TaskNotFoundError(project_name, title)
@@ -87,6 +89,7 @@ class TrelloTaskManager:
         return card_to_update, f"Task '{title}' in project '{project_name}' marked as in progress."
 
     def mark_as_completed(self, project_name, title):
+        self.selected_board_list = self._find_existing_list(project_name)
         card_to_close = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
         if not card_to_close:
             raise TaskNotFoundError(project_name, title)
@@ -98,6 +101,7 @@ class TrelloTaskManager:
         return card_to_close, f"Task '{title}' in project '{project_name}' has been completed."
 
     def update_task_description(self, project_name, title, description):
+        self.selected_board_list = self._find_existing_list(project_name)
         card_to_update = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
         if not card_to_update:
             raise TaskNotFoundError(project_name, title)
@@ -118,16 +122,35 @@ class TrelloTaskManager:
         return card_to_update, f"Description updated for task '{title}' in project '{project_name}'."
 
     def update_task_with_checklist(self, project_name, title, checklist_items):
+        self.selected_board_list = self._find_existing_list(project_name)
         card_to_update = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
         if not card_to_update:
             raise TaskNotFoundError(project_name, title)
 
-        # You can customize the checklist title if needed
-        card_to_update.add_checklist(DEFAULT_CHECKLIST_NAME, checklist_items)
+        # Fetch existing checklists to check if one already exists
+        card_to_update.fetch_checklists()
 
-        return card_to_update, f"Checklist added to task '{title}' in project '{project_name}'."
+        existing_checklist = None
+        for checklist in card_to_update.checklists:
+            if checklist.name == DEFAULT_CHECKLIST_NAME:
+                existing_checklist = checklist
+                break
+
+        if existing_checklist:
+            # Append items to existing checklist
+            for item in checklist_items:
+                existing_checklist.add_checklist_item(item)
+            return (
+                card_to_update,
+                f"Items appended to existing checklist in task '{title}' in project '{project_name}'.",
+            )
+        else:
+            # Create new checklist if none exists
+            card_to_update.add_checklist(DEFAULT_CHECKLIST_NAME, checklist_items)
+            return card_to_update, f"New checklist created for task '{title}' in project '{project_name}'."
 
     def complete_checklist_item(self, project_name, title, checklist_item_name):
+        self.selected_board_list = self._find_existing_list(project_name)
         card_to_update = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
         if not card_to_update:
             raise TaskNotFoundError(project_name, title)
@@ -144,6 +167,7 @@ class TrelloTaskManager:
         raise ChecklistNotFoundError(DEFAULT_CHECKLIST_NAME, title)
 
     def get_next_unchecked_checklist_item(self, project_name, title):
+        self.selected_board_list = self._find_existing_list(project_name)
         card_to_check = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
         if not card_to_check:
             raise TaskNotFoundError(project_name, title)
@@ -164,6 +188,7 @@ class TrelloTaskManager:
         raise ChecklistNotFoundError(DEFAULT_CHECKLIST_NAME, title)
 
     def get_tasks(self, project_name, filter_type="all"):
+        self.selected_board_list = self._find_existing_list(project_name)
         cards = self.selected_board_list.list_cards()
         filtered_tasks = []
         wip_label = self.labels.get(WIP_LABEL_NAME)
@@ -179,6 +204,7 @@ class TrelloTaskManager:
         return filtered_tasks, message
 
     def delete_all_tasks(self, project_name: str) -> str:
+        self.selected_board_list = self._find_existing_list(project_name)
         cards = self.selected_board_list.list_cards()
         for c in cards:
             c.delete()

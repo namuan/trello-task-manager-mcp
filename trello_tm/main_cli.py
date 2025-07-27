@@ -113,10 +113,13 @@ def _create_checklist_tools(mcp: FastMCP, manager: TrelloTaskManager):
     ) -> str:
         """Add or update a checklist for a task.
 
+        If a checklist already exists, the items will be appended to it.
+        If no checklist exists, a new one will be created with the provided items.
+
         Args:
             project_name: Name of the project
             title: Task title
-            checklist_items: A list of strings for the checklist.
+            checklist_items: A list of strings for the checklist items to add.
 
         Returns:
             Confirmation message
