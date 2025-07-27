@@ -12,6 +12,7 @@ BOARD_NAME_TO_MATCH = os.getenv("TRELLO_BOARD_NAME")
 # Default label definitions
 DEFAULT_LABELS = {"WIP": "blue"}
 WIP_LABEL_NAME = "WIP"
+DEFAULT_CHECKLIST_NAME = "Checklist"
 
 
 class TaskNotFoundError(Exception):
@@ -82,6 +83,16 @@ class TrelloTaskManager:
 
         return card_to_close, f"Task '{title}' in project '{project_name}' has been completed."
 
+    def update_task_with_checklist(self, project_name, title, checklist_items):
+        card_to_update = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
+        if not card_to_update:
+            raise TaskNotFoundError(project_name, title)
+
+        # You can customize the checklist title if needed
+        card_to_update.add_checklist(DEFAULT_CHECKLIST_NAME, checklist_items)
+
+        return card_to_update, f"Checklist added to task '{title}' in project '{project_name}'."
+
     def delete_all_tasks(self, project_name: str) -> str:
         cards = self.selected_board_list.list_cards()
         for c in cards:
@@ -113,17 +124,21 @@ if __name__ == "__main__":
 
     tm = TrelloTaskManager()
 
+    project_name = "Some Project"
     new_task_title = f"New Task at {datetime.datetime.now()}"
-    tm.add_task("Some project", new_task_title, "This is a test task.")
-    t1, _ = tm.get_next_task("Some project")
+    tm.add_task(project_name, new_task_title, "This is a test task.")
+    t1, _ = tm.get_next_task(project_name)
     print(t1.name)
 
-    tm.mark_as_in_progress("Some project", new_task_title)
-    _, m1 = tm.get_next_task("Some project")
+    tm.update_task_with_checklist(project_name, new_task_title, ["Item 1", "Item 2", "Item 3"])
+    print("Checklist set.")
+
+    tm.mark_as_in_progress(project_name, new_task_title)
+    _, m1 = tm.get_next_task(project_name)
     print(m1)
 
-    completed_card, _ = tm.mark_as_completed("Some project", new_task_title)
-    _, m2 = tm.get_next_task("Some project")
+    completed_card, _ = tm.mark_as_completed(project_name, new_task_title)
+    _, m2 = tm.get_next_task(project_name)
     print(m2)
 
     input("Press Enter to continue...")
