@@ -87,6 +87,22 @@ def _create_basic_task_tools(mcp: FastMCP, manager: TrelloTaskManager):
         """
         return handle_task_operation(manager.mark_as_completed, "Error marking task as completed", project_name, title)
 
+    @mcp.tool()
+    async def update_task_description(ctx: Context, project_name: str, title: str, description: str) -> str:
+        """Update the description of an existing task.
+
+        Args:
+            project_name: Name of the project
+            title: Task title to update
+            description: New description for the task
+
+        Returns:
+            Confirmation message
+        """
+        return handle_task_operation(
+            manager.update_task_description, "Error updating task description", project_name, title, description
+        )
+
 
 def _create_checklist_tools(mcp: FastMCP, manager: TrelloTaskManager):
     """Create checklist management tools."""

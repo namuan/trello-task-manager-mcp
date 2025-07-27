@@ -1,3 +1,4 @@
+import datetime
 import os
 
 from dotenv import load_dotenv
@@ -95,6 +96,26 @@ class TrelloTaskManager:
         card_to_close.set_due_complete()
 
         return card_to_close, f"Task '{title}' in project '{project_name}' has been completed."
+
+    def update_task_description(self, project_name, title, description):
+        card_to_update = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
+        if not card_to_update:
+            raise TaskNotFoundError(project_name, title)
+
+        # Fetch current description to preserve it
+        card_to_update.fetch()
+        existing_description = card_to_update.description or ""
+
+        # Add timestamp and new description
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if existing_description:
+            updated_description = f"{existing_description}\n\n--- Updated on {timestamp} ---\n{description}"
+        else:
+            updated_description = f"--- Created on {timestamp} ---\n{description}"
+
+        card_to_update.set_description(updated_description)
+
+        return card_to_update, f"Description updated for task '{title}' in project '{project_name}'."
 
     def update_task_with_checklist(self, project_name, title, checklist_items):
         card_to_update = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
@@ -230,8 +251,6 @@ class TrelloTaskManager:
 
 if __name__ == "__main__":
     # Testing
-    import datetime
-
     tm = TrelloTaskManager()
 
     project_name = "Some Project"
@@ -280,6 +299,19 @@ if __name__ == "__main__":
     # Test next available task
     _, m1 = tm.get_next_task(project_name)
     print(f"\nNext available task: {m1}")
+
+    # Test update_task_description with timestamp preservation
+    print("\n=== Testing update_task_description ===\n")
+    test_task_title = f"Description Test Task at {datetime.datetime.now()}"
+    tm.add_task(project_name, test_task_title, "Initial description")
+
+    # Update description first time
+    tm.update_task_description(project_name, test_task_title, "First update to the description")
+    print("First description update completed")
+
+    # Update description second time to test preservation
+    tm.update_task_description(project_name, test_task_title, "Second update to the description")
+    print("Second description update completed")
 
     input("Press Enter to continue...")
     tm.delete_all_tasks("Some project")
