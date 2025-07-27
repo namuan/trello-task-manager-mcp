@@ -9,6 +9,8 @@ LLM Task management System that integrates as an MCP Server and uses Trello for 
 - Create and manage tasks in Trello boards
 - Mark tasks as in-progress or completed
 - Get next available task
+- Add and manage checklists for tasks
+- Get next unchecked checklist item for focused work
 
 ## Prerequisites
 
@@ -77,6 +79,9 @@ Ask MCP Client to use `Trello task manager` along with the instructions to use o
 - `get_next_available_task`: Get the next available task
 - `mark_as_in_progress`: Mark a task as in progress
 - `mark_as_completed`: Mark a task as completed
+- `update_task_with_checklist`: Add or update a checklist for a task
+- `complete_checklist_item`: Mark a specific checklist item as completed
+- `get_next_unchecked_checklist_item`: Get the next unchecked checklist item for a task
 
 ## Development
 

@@ -29,6 +29,12 @@ class ChecklistNotFoundError(Exception):
         super().__init__(f"Checklist '{checklist_name}' not found for task '{title}'.")
 
 
+class ChecklistItemNotFoundError(Exception):
+    def __init__(self, title):
+        self.title = title
+        super().__init__(f"No unchecked checklist items found for task '{title}'.")
+
+
 class TrelloTaskManager:
     selected_board_list = None
     wip_label = None
@@ -116,6 +122,26 @@ class TrelloTaskManager:
 
         raise ChecklistNotFoundError(DEFAULT_CHECKLIST_NAME, title)
 
+    def get_next_unchecked_checklist_item(self, project_name, title):
+        card_to_check = next((card for card in self.selected_board_list.list_cards() if card.name == title), None)
+        if not card_to_check:
+            raise TaskNotFoundError(project_name, title)
+
+        card_to_check.fetch_checklists()
+
+        for checklist in card_to_check.checklists:
+            if checklist.name == DEFAULT_CHECKLIST_NAME:
+                # Find the first unchecked item
+                for item in checklist.items:
+                    if not item.get("checked", False):
+                        return (item, f"Next unchecked checklist item for task '{title}': {item['name']}")
+
+                # If we get here, all items are checked
+                raise ChecklistItemNotFoundError(title)
+
+        # If we get here, no checklist was found
+        raise ChecklistNotFoundError(DEFAULT_CHECKLIST_NAME, title)
+
     def delete_all_tasks(self, project_name: str) -> str:
         cards = self.selected_board_list.list_cards()
         for c in cards:
@@ -156,8 +182,16 @@ if __name__ == "__main__":
     tm.update_task_with_checklist(project_name, new_task_title, ["Item 1", "Item 2", "Item 3"])
     print("Checklist set.")
 
+    # Test getting next unchecked item
+    _, next_item_msg = tm.get_next_unchecked_checklist_item(project_name, new_task_title)
+    print(next_item_msg)
+
     _, m = tm.complete_checklist_item(project_name, new_task_title, "Item 1")
     print(m)
+
+    # Test getting next unchecked item after completing one
+    _, next_item_msg2 = tm.get_next_unchecked_checklist_item(project_name, new_task_title)
+    print(next_item_msg2)
 
     tm.mark_as_in_progress(project_name, new_task_title)
     _, m1 = tm.get_next_task(project_name)

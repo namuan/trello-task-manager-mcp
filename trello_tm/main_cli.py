@@ -134,6 +134,24 @@ def create_task_tools(mcp: FastMCP, manager: TrelloTaskManager):
             checklist_item_name,
         )
 
+    @mcp.tool()
+    async def get_next_unchecked_checklist_item(ctx: Context, project_name: str, title: str) -> str:
+        """Get the next unchecked checklist item for a task.
+
+        Args:
+            project_name: Name of the project
+            title: Task title
+
+        Returns:
+            The name of the next unchecked checklist item or an error message
+        """
+        return handle_task_operation(
+            manager.get_next_unchecked_checklist_item,
+            "Error getting next unchecked checklist item",
+            project_name,
+            title,
+        )
+
 
 def create_mcp() -> FastMCP:
     """Create a new MCP instance with task management tools.
