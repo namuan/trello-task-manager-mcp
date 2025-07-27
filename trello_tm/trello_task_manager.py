@@ -145,63 +145,16 @@ class TrelloTaskManager:
     def get_tasks(self, project_name, filter_type="all"):
         cards = self.selected_board_list.list_cards()
         filtered_tasks = []
-
         wip_label = self.labels.get(WIP_LABEL_NAME)
 
         for card in cards:
             card.fetch()
+            status = self._get_task_status(card, wip_label)
 
-            # Check if card has WIP label
-            has_wip = False
-            if wip_label:
-                has_wip = any(label.id == wip_label.id for label in card.labels)
+            if self._should_include_task(status, filter_type):
+                filtered_tasks.append(self._create_task_dict(card, status))
 
-            # Check if card is completed
-            is_completed = card.is_due_complete
-
-            # Apply filter
-            if filter_type == "all":
-                filtered_tasks.append({
-                    "name": card.name,
-                    "description": card.description,
-                    "status": "done" if is_completed else ("wip" if has_wip else "todo"),
-                    "id": card.id,
-                })
-            elif filter_type == "wip" and has_wip and not is_completed:
-                filtered_tasks.append({
-                    "name": card.name,
-                    "description": card.description,
-                    "status": "wip",
-                    "id": card.id,
-                })
-            elif filter_type == "done" and is_completed:
-                filtered_tasks.append({
-                    "name": card.name,
-                    "description": card.description,
-                    "status": "done",
-                    "id": card.id,
-                })
-
-        if not filtered_tasks:
-            if filter_type == "all":
-                message = f"No tasks found in project '{project_name}'."
-            elif filter_type == "wip":
-                message = f"No work in progress tasks found in project '{project_name}'."
-            elif filter_type == "done":
-                message = f"No completed tasks found in project '{project_name}'."
-            else:
-                message = f"No tasks found with filter '{filter_type}' in project '{project_name}'."
-        else:
-            task_count = len(filtered_tasks)
-            if filter_type == "all":
-                message = f"Found {task_count} task(s) in project '{project_name}'."
-            elif filter_type == "wip":
-                message = f"Found {task_count} work in progress task(s) in project '{project_name}'."
-            elif filter_type == "done":
-                message = f"Found {task_count} completed task(s) in project '{project_name}'."
-            else:
-                message = f"Found {task_count} task(s) with filter '{filter_type}' in project '{project_name}'."
-
+        message = self._generate_result_message(filtered_tasks, filter_type, project_name)
         return filtered_tasks, message
 
     def delete_all_tasks(self, project_name: str) -> str:
@@ -210,6 +163,52 @@ class TrelloTaskManager:
             c.delete()
 
         return f"All tasks in project '{project_name}' have been deleted."
+
+    def _create_task_dict(self, card, status):
+        """Create a task dictionary from a card."""
+        return {"name": card.name, "description": card.description, "status": status, "id": card.id}
+
+    def _get_task_status(self, card, wip_label):
+        """Determine the status of a task card."""
+        has_wip = False
+        if wip_label:
+            has_wip = any(label.id == wip_label.id for label in card.labels)
+
+        is_completed = card.is_due_complete
+
+        if is_completed:
+            return "done"
+        elif has_wip:
+            return "wip"
+        else:
+            return "todo"
+
+    def _should_include_task(self, status, filter_type):
+        """Check if a task should be included based on filter."""
+        filter_conditions = {"all": True, "wip": status == "wip", "done": status == "done"}
+        return filter_conditions.get(filter_type, False)
+
+    def _generate_result_message(self, filtered_tasks, filter_type, project_name):
+        """Generate appropriate result message based on filter and results."""
+        if not filtered_tasks:
+            no_tasks_messages = {
+                "all": f"No tasks found in project '{project_name}'.",
+                "wip": f"No work in progress tasks found in project '{project_name}'.",
+                "done": f"No completed tasks found in project '{project_name}'.",
+            }
+            return no_tasks_messages.get(
+                filter_type, f"No tasks found with filter '{filter_type}' in project '{project_name}'."
+            )
+        else:
+            task_count = len(filtered_tasks)
+            found_tasks_messages = {
+                "all": f"Found {task_count} task(s) in project '{project_name}'.",
+                "wip": f"Found {task_count} work in progress task(s) in project '{project_name}'.",
+                "done": f"Found {task_count} completed task(s) in project '{project_name}'.",
+            }
+            return found_tasks_messages.get(
+                filter_type, f"Found {task_count} task(s) with filter '{filter_type}' in project '{project_name}'"
+            )
 
     def _create_default_labels(self):
         try:

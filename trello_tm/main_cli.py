@@ -28,13 +28,8 @@ def handle_task_operation(operation_func, error_prefix: str, *args):
         return message
 
 
-def create_task_tools(mcp: FastMCP, manager: TrelloTaskManager):
-    """Create and register task management tools with MCP instance.
-
-    Args:
-        mcp: FastMCP instance
-        manager: TrelloTaskManager instance
-    """
+def _create_basic_task_tools(mcp: FastMCP, manager: TrelloTaskManager):
+    """Create basic task management tools."""
 
     @mcp.tool()
     async def add_task(ctx: Context, project_name: str, title: str, description: str) -> str:
@@ -91,6 +86,10 @@ def create_task_tools(mcp: FastMCP, manager: TrelloTaskManager):
             Confirmation message
         """
         return handle_task_operation(manager.mark_as_completed, "Error marking task as completed", project_name, title)
+
+
+def _create_checklist_tools(mcp: FastMCP, manager: TrelloTaskManager):
+    """Create checklist management tools."""
 
     @mcp.tool()
     async def update_task_with_checklist(
@@ -152,6 +151,10 @@ def create_task_tools(mcp: FastMCP, manager: TrelloTaskManager):
             title,
         )
 
+
+def _create_task_query_tools(mcp: FastMCP, manager: TrelloTaskManager):
+    """Create task query tools."""
+
     @mcp.tool()
     async def get_tasks(ctx: Context, project_name: str, filter_type: str = "all") -> str:
         """Get tasks from a project with optional filtering.
@@ -177,6 +180,18 @@ def create_task_tools(mcp: FastMCP, manager: TrelloTaskManager):
             return "\n".join(result)
         except Exception as e:
             return f"Error getting tasks: {e!s}"
+
+
+def create_task_tools(mcp: FastMCP, manager: TrelloTaskManager):
+    """Create and register task management tools with MCP instance.
+
+    Args:
+        mcp: FastMCP instance
+        manager: TrelloTaskManager instance
+    """
+    _create_basic_task_tools(mcp, manager)
+    _create_checklist_tools(mcp, manager)
+    _create_task_query_tools(mcp, manager)
 
 
 def create_mcp() -> FastMCP:
