@@ -340,4 +340,4 @@ if __name__ == "__main__":
     print("Second description update completed")
 
     input("Press Enter to continue...")
-    tm.delete_all_tasks("Some project")
+    tm.delete_all_tasks(project_name)
