@@ -21,6 +21,7 @@ dependencies = [
     "fastmcp>=2.10.6",
     "py-trello>=0.20.1",
     "python-dotenv>=1.1.1",
+    "requests>=2.31.0",
 ]
 
 [project.urls]
@@ -34,6 +35,7 @@ dev-dependencies = [
     "pre-commit>=2.20.0",
     "tox-uv>=1.11.3",
     "ruff>=0.6.9",
+    "pyupgrade>=3.20.0",
 ]
 
 [build-system]
@@ -89,6 +91,10 @@ ignore = [
     "E501",
     # DoNotAssignLambda
     "E731",
+    #
+    "TRY300",
+    #
+    "TRY003",
 ]
 
 [tool.ruff.lint.per-file-ignores]
