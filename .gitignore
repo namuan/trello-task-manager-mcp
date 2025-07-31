@@ -16,3 +16,4 @@ __pycache__/
 !.editorconfig
 !LICENSE
 !tox.ini
+!.env.example
