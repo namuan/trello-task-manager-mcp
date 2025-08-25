@@ -15,6 +15,7 @@ See [Demo Video](https://x.com/namuan_twt/status/1949216924765753409)
 - Get filtered list of tasks (all, work-in-progress, or completed)
 - Add and manage checklists for tasks
 - Get next unchecked checklist item for focused work
+- Interactive feedback UI for collecting user feedback on project changes
 
 ## Prerequisites
 
@@ -88,6 +89,7 @@ Ask MCP Client to use `Trello task manager` along with the instructions to use o
 - `update_task_with_checklist`: Add or update a checklist for a task
 - `complete_checklist_item`: Mark a specific checklist item as completed
 - `get_next_unchecked_checklist_item`: Get the next unchecked checklist item for a task
+- `interactive_feedback`: Launch an interactive GUI for collecting user feedback on project changes
 
 ## Development
 

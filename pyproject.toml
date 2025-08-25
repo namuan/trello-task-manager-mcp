@@ -21,6 +21,8 @@ dependencies = [
     "fastmcp>=2.11.2",
     "py-trello>=0.20.1",
     "python-dotenv>=1.1.1",
+    "pyside6>=6.0.0",
+    "psutil>=5.9.0",
 ]
 
 [project.urls]
@@ -84,11 +86,17 @@ select = [
     # tryceratops
     "TRY",
 ]
+
 ignore = [
     # LineTooLong
     "E501",
     # DoNotAssignLambda
     "E731",
+    "TRY002",
+    "TRY003",
+    "TRY300",
+    "TRY301",
+    "E741",
 ]
 
 [tool.ruff.lint.per-file-ignores]
