@@ -13,7 +13,7 @@ from typing import Optional, TypedDict
 
 import psutil
 from PySide6.QtCore import QObject, QSettings, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QFont, QFontDatabase, QIcon, QKeyEvent, QPalette, QTextCursor
+from PySide6.QtGui import QFont, QFontDatabase, QKeyEvent, QTextCursor
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -39,67 +39,6 @@ class FeedbackConfig(TypedDict):
     execute_automatically: bool
 
 
-def set_dark_title_bar(widget: QWidget, dark_title_bar: bool) -> None:
-    # Ensure we're on Windows
-    if sys.platform != "win32":
-        return
-
-    from ctypes import byref, c_uint32, windll
-
-    # Get Windows build number
-    build_number = sys.getwindowsversion().build
-    if build_number < 17763:  # Windows 10 1809 minimum
-        return
-
-    # Check if the widget's property already matches the setting
-    dark_prop = widget.property("DarkTitleBar")
-    if dark_prop is not None and dark_prop == dark_title_bar:
-        return
-
-    # Set the property (True if dark_title_bar != 0, False otherwise)
-    widget.setProperty("DarkTitleBar", dark_title_bar)
-
-    # Load dwmapi.dll and call DwmSetWindowAttribute
-    dwmapi = windll.dwmapi
-    hwnd = widget.winId()  # Get the window handle
-    attribute = 20 if build_number >= 18985 else 19  # Use newer attribute for newer builds
-    c_dark_title_bar = c_uint32(dark_title_bar)  # Convert to C-compatible uint32
-    dwmapi.DwmSetWindowAttribute(hwnd, attribute, byref(c_dark_title_bar), 4)
-
-    # HACK: Create a 1x1 pixel frameless window to force redraw
-    temp_widget = QWidget(None, Qt.FramelessWindowHint)
-    temp_widget.resize(1, 1)
-    temp_widget.move(widget.pos())
-    temp_widget.show()
-    temp_widget.deleteLater()  # Safe deletion in Qt event loop
-
-
-def get_dark_mode_palette(app: QApplication):
-    darkPalette = app.palette()
-    darkPalette.setColor(QPalette.Window, QColor(53, 53, 53))
-    darkPalette.setColor(QPalette.WindowText, Qt.white)
-    darkPalette.setColor(QPalette.Disabled, QPalette.WindowText, QColor(127, 127, 127))
-    darkPalette.setColor(QPalette.Base, QColor(42, 42, 42))
-    darkPalette.setColor(QPalette.AlternateBase, QColor(66, 66, 66))
-    darkPalette.setColor(QPalette.ToolTipBase, QColor(53, 53, 53))
-    darkPalette.setColor(QPalette.ToolTipText, Qt.white)
-    darkPalette.setColor(QPalette.Text, Qt.white)
-    darkPalette.setColor(QPalette.Disabled, QPalette.Text, QColor(127, 127, 127))
-    darkPalette.setColor(QPalette.Dark, QColor(35, 35, 35))
-    darkPalette.setColor(QPalette.Shadow, QColor(20, 20, 20))
-    darkPalette.setColor(QPalette.Button, QColor(53, 53, 53))
-    darkPalette.setColor(QPalette.ButtonText, Qt.white)
-    darkPalette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(127, 127, 127))
-    darkPalette.setColor(QPalette.BrightText, Qt.red)
-    darkPalette.setColor(QPalette.Link, QColor(42, 130, 218))
-    darkPalette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-    darkPalette.setColor(QPalette.Disabled, QPalette.Highlight, QColor(80, 80, 80))
-    darkPalette.setColor(QPalette.HighlightedText, Qt.white)
-    darkPalette.setColor(QPalette.Disabled, QPalette.HighlightedText, QColor(127, 127, 127))
-    darkPalette.setColor(QPalette.PlaceholderText, QColor(127, 127, 127))
-    return darkPalette
-
-
 def kill_tree(process: subprocess.Popen):
     killed: list[psutil.Process] = []
     parent = psutil.Process(process.pid)
@@ -123,87 +62,12 @@ def kill_tree(process: subprocess.Popen):
 
 
 def get_user_environment() -> dict[str, str]:
-    if sys.platform != "win32":
-        return os.environ.copy()
+    """Return a copy of the current environment.
 
-    import ctypes
-    from ctypes import wintypes
-
-    # Load required DLLs
-    advapi32 = ctypes.WinDLL("advapi32")
-    userenv = ctypes.WinDLL("userenv")
-    kernel32 = ctypes.WinDLL("kernel32")
-
-    # Constants
-    TOKEN_QUERY = 0x0008
-
-    # Function prototypes
-    OpenProcessToken = advapi32.OpenProcessToken
-    OpenProcessToken.argtypes = [wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE)]
-    OpenProcessToken.restype = wintypes.BOOL
-
-    CreateEnvironmentBlock = userenv.CreateEnvironmentBlock
-    CreateEnvironmentBlock.argtypes = [ctypes.POINTER(ctypes.c_void_p), wintypes.HANDLE, wintypes.BOOL]
-    CreateEnvironmentBlock.restype = wintypes.BOOL
-
-    DestroyEnvironmentBlock = userenv.DestroyEnvironmentBlock
-    DestroyEnvironmentBlock.argtypes = [wintypes.LPVOID]
-    DestroyEnvironmentBlock.restype = wintypes.BOOL
-
-    GetCurrentProcess = kernel32.GetCurrentProcess
-    GetCurrentProcess.argtypes = []
-    GetCurrentProcess.restype = wintypes.HANDLE
-
-    CloseHandle = kernel32.CloseHandle
-    CloseHandle.argtypes = [wintypes.HANDLE]
-    CloseHandle.restype = wintypes.BOOL
-
-    # Get process token
-    token = wintypes.HANDLE()
-    if not OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, ctypes.byref(token)):
-        raise RuntimeError("Failed to open process token")
-
-    try:
-        # Create environment block
-        environment = ctypes.c_void_p()
-        if not CreateEnvironmentBlock(ctypes.byref(environment), token, False):
-            raise RuntimeError("Failed to create environment block")
-
-        try:
-            # Convert environment block to list of strings
-            result = {}
-            env_ptr = ctypes.cast(environment, ctypes.POINTER(ctypes.c_wchar))
-            offset = 0
-
-            while True:
-                # Get string at current offset
-                current_string = ""
-                while env_ptr[offset] != "\0":
-                    current_string += env_ptr[offset]
-                    offset += 1
-
-                # Skip null terminator
-                offset += 1
-
-                # Break if we hit double null terminator
-                if not current_string:
-                    break
-
-                equal_index = current_string.index("=")
-                if equal_index == -1:
-                    continue
-
-                key = current_string[:equal_index]
-                value = current_string[equal_index + 1 :]
-                result[key] = value
-
-            return result
-
-        finally:
-            DestroyEnvironmentBlock(environment)
-
-    finally:
-        CloseHandle(token)
+    Windows is not supported; this function is POSIX-only and simply returns
+    the process environment.
+    """
+    return os.environ.copy()
 
 
 class FeedbackTextEdit(QTextEdit):
@@ -239,9 +103,6 @@ class FeedbackUI(QMainWindow):
         self.log_signals.append_log.connect(self._append_log)
 
         self.setWindowTitle("Interactive Feedback MCP")
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        icon_path = os.path.join(script_dir, "images", "feedback.png")
-        self.setWindowIcon(QIcon(icon_path))
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
 
         self.settings = QSettings("InteractiveFeedbackMCP", "InteractiveFeedbackMCP")
@@ -281,19 +142,8 @@ class FeedbackUI(QMainWindow):
         else:
             self.toggle_command_button.setText("Show Command Section")
 
-        set_dark_title_bar(self, True)
-
         if self.config.get("execute_automatically", False):
             self._run_command()
-
-    def _format_windows_path(self, path: str) -> str:
-        if sys.platform == "win32":
-            # Convert forward slashes to backslashes
-            path = path.replace("/", "\\")
-            # Capitalize drive letter if path starts with x:\
-            if len(path) >= 2 and path[1] == ":" and path[0].isalpha():
-                path = path[0].upper() + path[1:]
-        return path
 
     def _create_ui(self):
         central_widget = QWidget()
@@ -310,7 +160,7 @@ class FeedbackUI(QMainWindow):
         command_layout = QVBoxLayout(self.command_group)
 
         # Working directory label
-        formatted_path = self._format_windows_path(self.project_directory)
+        formatted_path = self.project_directory
         working_dir_label = QLabel(f"Working directory: {formatted_path}")
         command_layout.addWidget(working_dir_label)
 
@@ -406,19 +256,6 @@ class FeedbackUI(QMainWindow):
 
         # Add widgets in a specific order
         layout.addWidget(self.feedback_group)
-
-        # Credits/Contact Label
-        contact_label = QLabel(
-            'Need to improve? Contact Fábio Ferreira on <a href="https://x.com/fabiomlferreira">X.com</a> or visit <a href="https://dotcursorrules.com/">dotcursorrules.com</a>'
-        )
-        contact_label.setOpenExternalLinks(True)
-        contact_label.setAlignment(Qt.AlignCenter)
-        # Optionally, make font a bit smaller and less prominent
-        # contact_label_font = contact_label.font()
-        # contact_label_font.setPointSize(contact_label_font.pointSize() - 1)
-        # contact_label.setFont(contact_label_font)
-        contact_label.setStyleSheet("font-size: 9pt; color: #cccccc;")  # Light gray for dark theme
-        layout.addWidget(contact_label)
 
     def _toggle_command_section(self):
         is_visible = self.command_group.isVisible()
@@ -577,7 +414,6 @@ def get_project_settings_group(project_dir: str) -> str:
 
 def feedback_ui(project_directory: str, prompt: str, output_file: Optional[str] = None) -> Optional[FeedbackResult]:
     app = QApplication.instance() or QApplication()
-    app.setPalette(get_dark_mode_palette(app))
     app.setStyle("Fusion")
     ui = FeedbackUI(project_directory, prompt)
     result = ui.run()
