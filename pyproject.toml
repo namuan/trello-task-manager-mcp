@@ -5,7 +5,7 @@ description = "Hyper focused reading"
 authors = [{ name = "Namuan", email = "namuan@deskriders.dev" }]
 readme = "README.md"
 keywords = ['python']
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.11,<4.0"
 classifiers = [
     "Intended Audience :: Developers",
     "Programming Language :: Python",
