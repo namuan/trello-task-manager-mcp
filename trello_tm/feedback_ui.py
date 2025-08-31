@@ -9,7 +9,7 @@ import os
 import subprocess
 import sys
 import threading
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import psutil
 from PySide6.QtCore import QObject, QSettings, Qt, QTimer, Signal
@@ -96,7 +96,7 @@ class FeedbackUI(QMainWindow):
         self.project_directory = project_directory
         self.prompt = prompt
 
-        self.process: Optional[subprocess.Popen] = None
+        self.process: subprocess.Popen | None = None
         self.log_buffer = []
         self.feedback_result = None
         self.log_signals = LogSignals()
@@ -427,7 +427,7 @@ def get_project_settings_group(project_dir: str) -> str:
     return f"{basename}_{full_hash}"
 
 
-def feedback_ui(project_directory: str, prompt: str, output_file: Optional[str] = None) -> Optional[FeedbackResult]:
+def feedback_ui(project_directory: str, prompt: str, output_file: str | None = None) -> FeedbackResult | None:
     app = QApplication.instance() or QApplication()
     app.setStyle("Fusion")
     ui = FeedbackUI(project_directory, prompt)

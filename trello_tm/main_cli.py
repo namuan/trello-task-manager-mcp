@@ -248,9 +248,9 @@ def create_mcp() -> FastMCP:
     """
     mcp = FastMCP(
         "TASK MANAGER",
-        description="Trello Task Manager",
         host=os.getenv("HOST", "127.0.0.1"),
-        port=os.getenv("PORT", "8050"),
+        port=os.getenv("PORT", 8050),
+        instructions="Trello Task Manager",
     )
 
     manager = TrelloTaskManager()
