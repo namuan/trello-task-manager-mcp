@@ -269,6 +269,7 @@ class FeedbackUI(QMainWindow):
         self.settings.beginGroup(self.project_group_name)
         self.settings.setValue("commandSectionVisible", self.command_group.isVisible())
         self.settings.endGroup()
+        self.settings.sync()
 
         # Adjust window height only
         new_height = self.centralWidget().sizeHint().height()
@@ -320,6 +321,15 @@ class FeedbackUI(QMainWindow):
         if not command:
             self._append_log("Please enter a command to run\n")
             return
+
+        # Persist the last run command for this project immediately
+        self.config["run_command"] = command
+        self.config["execute_automatically"] = self.auto_check.isChecked()
+        self.settings.beginGroup(self.project_group_name)
+        self.settings.setValue("run_command", self.config["run_command"])
+        self.settings.setValue("execute_automatically", self.config["execute_automatically"])
+        self.settings.endGroup()
+        self.settings.sync()
 
         self._append_log(f"$ {command}\n")
         self.run_button.setText("Sto&p")
@@ -373,6 +383,7 @@ class FeedbackUI(QMainWindow):
         self.settings.setValue("run_command", self.config["run_command"])
         self.settings.setValue("execute_automatically", self.config["execute_automatically"])
         self.settings.endGroup()
+        self.settings.sync()
         self._append_log("Configuration saved for this project.\n")
 
     def closeEvent(self, event):
@@ -382,10 +393,14 @@ class FeedbackUI(QMainWindow):
         self.settings.setValue("windowState", self.saveState())
         self.settings.endGroup()
 
-        # Save project-specific command section visibility (this is now slightly redundant due to immediate save in toggle, but harmless)
+        # Save project-specific settings
         self.settings.beginGroup(self.project_group_name)
         self.settings.setValue("commandSectionVisible", self.command_group.isVisible())
+        # Also persist current command and auto-execute flag on close
+        self.settings.setValue("run_command", self.command_entry.text())
+        self.settings.setValue("execute_automatically", self.auto_check.isChecked())
         self.settings.endGroup()
+        self.settings.sync()
 
         if self.process:
             kill_tree(self.process)

@@ -6,6 +6,10 @@ install: ## Install the virtual environment and install the pre-commit hooks
 	@uv sync
 	@uv run pre-commit install
 
+start-work: ## Start working on a new feature
+	@echo "🚀 Starting work on a new feature"
+	@mob start -i -b "$(FEATURE)"
+
 .PHONY: check
 check: ## Run code quality tools.
 	@echo "🚀 Checking lock file consistency with 'pyproject.toml'"
@@ -14,9 +18,24 @@ check: ## Run code quality tools.
 	@uv run pre-commit run -a
 	@mob next
 
+.PHONY: upgrade
+upgrade: ## Upgrade all dependencies to their latest versions
+	@echo "🚀 Upgrading all dependencies"
+	@uv lock --upgrade
+
+.PHONY: test
+test: ## Run all unit tests
+	@echo "🚀 Running unit tests"
+	@uv run pytest -v
+
+.PHONY: test-single
+test-single: ## Run a single test file (usage: make test-single TEST=test_config.py)
+	@echo "🚀 Running single test: $(TEST)"
+	@uv run pytest -v tests/$(TEST)
+
 .PHONY: run
 run: ## Run the application
-	@echo "🚀 Running"
+	@echo "🚀 Testing code: Running $(PROJECTNAME)"
 	@uv run $(PROJECTNAME)
 
 .PHONY: build
@@ -28,7 +47,9 @@ build: clean-build ## Build wheel file
 clean-build: ## Clean build artifacts
 	@echo "🚀 Removing build artifacts"
 	@uv run python -c "import shutil; import os; shutil.rmtree('dist') if os.path.exists('dist') else None"
+	@uvx pyclean .
 
+.PHONY: context
 context: clean-build ## Build context file from application sources
 	llm-context-builder.py --extensions .py --ignored_dirs build dist generated venv .venv .idea .aider.tags.cache.v3 --print_contents --temp_file
 
