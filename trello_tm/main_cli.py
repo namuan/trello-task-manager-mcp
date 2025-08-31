@@ -265,8 +265,50 @@ async def async_main():
 
     transport = os.getenv("TRANSPORT", "sse")
     if transport == "sse":
-        # Run the MCP server with sse transport
-        await mcp.run_sse_async()
+        # Run the MCP server with SSE transport using a custom uvicorn runner
+        # to allow configurable aggressive shutdown and true forced quit.
+        import signal
+
+        import uvicorn
+
+        graceful_timeout_env = os.getenv("GRACEFUL_SHUTDOWN_TIMEOUT", "1")
+        try:
+            graceful_timeout = int(graceful_timeout_env)
+        except ValueError:
+            graceful_timeout = 1
+
+        # Build the Starlette app and config
+        app = mcp.sse_app()
+        config = uvicorn.Config(
+            app,
+            host=mcp.settings.host,
+            port=mcp.settings.port,
+            log_level=mcp.settings.log_level.lower(),
+            timeout_graceful_shutdown=graceful_timeout,
+            timeout_keep_alive=1,
+        )
+        server = uvicorn.Server(config)
+
+        # Optional: immediate exit on first SIGINT if FORCE_EXIT_ON_SIGINT=true
+        force_exit = os.getenv("FORCE_EXIT_ON_SIGINT", "false").lower() in {"1", "true", "yes", "on"}
+        if force_exit:
+            # Replace the default signal handler to exit immediately
+            def _immediate_exit(signum, frame):
+                os._exit(0)  # Forceful immediate exit
+
+            try:
+                signal.signal(signal.SIGINT, _immediate_exit)
+                signal.signal(signal.SIGTERM, _immediate_exit)
+            # ruff: noqa: S110
+            except Exception:
+                # Some environments may not support setting signals; ignore.
+                pass
+
+        try:
+            await server.serve()
+        except KeyboardInterrupt:
+            # As a final fallback, if a KeyboardInterrupt bubbles up, exit immediately
+            os._exit(0)
     else:
         # Run the MCP server with stdio transport
         await mcp.run_stdio_async()
