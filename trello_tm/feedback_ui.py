@@ -204,11 +204,14 @@ class FeedbackUI(QMainWindow):
         self.log_text.setFont(font)
         console_layout_internal.addWidget(self.log_text)
 
-        # Clear button
+        # Clear button and include logs checkbox
         button_layout = QHBoxLayout()
         self.clear_button = QPushButton("&Clear")
         self.clear_button.clicked.connect(self.clear_logs)
+        self.include_logs_checkbox = QCheckBox("Include logs with feedback")
+        self.include_logs_checkbox.setChecked(True)  # Default to including logs
         button_layout.addStretch()
+        button_layout.addWidget(self.include_logs_checkbox)
         button_layout.addWidget(self.clear_button)
         console_layout_internal.addLayout(button_layout)
 
@@ -367,8 +370,10 @@ class FeedbackUI(QMainWindow):
             self.run_button.setText("&Run")
 
     def _submit_feedback(self):
+        # Include logs based on checkbox state
+        logs_content = "".join(self.log_buffer) if self.include_logs_checkbox.isChecked() else ""
         self.feedback_result = FeedbackResult(
-            logs="".join(self.log_buffer),
+            logs=logs_content,
             interactive_feedback=self.feedback_text.toPlainText().strip(),
         )
         self.close()

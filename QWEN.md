@@ -1,0 +1,1 @@
+/Users/nnn/workspace/trello-task-manager-mcp/.trae/rules/project_rules.md

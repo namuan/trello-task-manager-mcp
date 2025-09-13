@@ -5,6 +5,7 @@ __pycache__/
 # unignore folders
 !trello_tm/
 !assets/
+!.trae/
 
 # unignore files
 !.gitignore
@@ -17,3 +18,4 @@ __pycache__/
 !LICENSE
 !tox.ini
 !.env.example
+!QWEN.md
