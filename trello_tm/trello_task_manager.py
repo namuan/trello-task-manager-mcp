@@ -73,7 +73,11 @@ class TrelloTaskManager:
             has_wip = any(label.id == wip_label.id for label in card.labels)
 
             if not has_wip and not card.is_due_complete:
-                return card, f"Next available task: {card.name} - {card.description}"
+                return card, "\n".join([
+                    "Next available task:",
+                    f"Task title: '{card.name}'",
+                    f"Task description: {card.description}",
+                ])
 
         return None, f"No available tasks found in '{project_name}'."
 

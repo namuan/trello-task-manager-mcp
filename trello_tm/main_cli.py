@@ -193,9 +193,10 @@ def _create_task_query_tools(mcp: FastMCP, manager: TrelloTaskManager):
 
             # Format the tasks for display
             result = [message]
-            for i, task in enumerate(tasks, 1):
-                status_emoji = "✅" if task["status"] == "done" else ("🔄" if task["status"] == "wip" else "📋")
-                result.append(f"{i}. {status_emoji} {task['name']} - {task['description']} (Status: {task['status']})")
+            for _i, task in enumerate(tasks, 1):
+                result.append(f"Task title: '{task['name']}'")
+                result.append(f"Task status: '{task['status']}'")
+                result.append(f"Task description: {task['description']}")
 
             return "\n".join(result)
         except Exception as e:
