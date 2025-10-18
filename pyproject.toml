@@ -30,8 +30,8 @@ Homepage = "https://namuan.github.io/trello-task-manager-mcp/"
 Repository = "https://github.com/namuan/trello-task-manager-mcp"
 Documentation = "https://namuan.github.io/trello-task-manager-mcp/"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest",
     "pre-commit",
     "tox-uv",
